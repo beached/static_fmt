@@ -22,10 +22,10 @@
 
 #pragma once
 
-#include <array>
 #include <functional>
 
 #include <daw/daw_string_view.h>
+#include <daw/daw_static_string.h>
 
 namespace daw {
 	namespace static_fmt {
@@ -35,19 +35,19 @@ namespace daw {
 					inline constexpr ptrdiff_t const dynamic_extent = -1;
 
 					template<typename CharT, size_t N>
-					constexpr std::array<CharT, N>
+					constexpr daw::basic_static_string<CharT, N>
 					cstr_to_arry( CharT const ( &str )[N + 1] ) noexcept {
-						std::array<CharT, N> result{};
+						daw::basic_static_string<CharT, N> result{};
 						std::copy( std::begin( str ), std::prev( std::end( str ) ),
 						           result.data( ) );
 						return result;
 					}
 
 					template<typename CharT, size_t N, size_t M>
-					constexpr std::array<CharT, N>
+					constexpr daw::basic_static_string<CharT, N>
 					cstr_to_arry( CharT const ( &str1 )[N + 1],
 					              CharT const ( &str2 )[M + 1] ) noexcept {
-						std::array<CharT, N + M> result{};
+						daw::basic_static_string<CharT, N + M> result{};
 						auto pos =
 						  std::copy( std::cbegin( str1 ), std::prev( std::cend( str1 ) ),
 						             result.data( ) );
@@ -56,19 +56,16 @@ namespace daw {
 						return result;
 					}
 
-					template<CharT, size_t PrefixSize, ptrdiff_t Extent,
-					         typename Function,
-					         std::enable_if_t<Extent == dynamic_extent>, std::nullptr_t>
-					= nullptr > struct str_t {
+					template<typename CharT, size_t N, typename Function>
+					struct dstr_t {
 						static constexpr ptrdiff_t const extent = dynamic_extent;
-						std::array<CharT, PrefixSize> m_prefix;
+
+						daw::basic_static_string<CharT, N> m_prefix;
 						Function m_make_string;
 
-						template<typename Func>
-						constexpr str_t( CharT const ( &prefix )[PrefixSize + 1],
-						                 Func &&func )
+						constexpr dstr_t( CharT const ( &prefix )[N + 1], Function &&func )
 						  : m_prefix( cstr_to_arry( prefix ) )
-						  , m_make_string( std::forward<Func>( func ) ) {}
+						  , m_make_string( std::forward<Function>( func ) ) {}
 
 						std::string to_string( ) const {
 							std::string result( m_prefix.data( ), m_prefix.size( ) );
@@ -77,34 +74,40 @@ namespace daw {
 						}
 					};
 
-					template<CharT, size_t PrefixSize, ptrdiff_t Extent,
-					         std::enable_if_t<Extent != dynamic_extent>, std::nullptr_t>
-					= nullptr > struct str_t {
-						static constexpr ptrdiff_t const extent = Extent + PrefixSize;
-						daw::static_string<CharT, extent> m_data;
+					template<typename CharT, size_t N, typename Function>
+					dstr_t( CharT const ( &prefix )[N], Function &&func )
+					  ->dstr_t<CharT, N-1, Function>;
 
-						constexpr str_t( CharT const ( &prefix )[PrefixSize + 1],
-						                 CharT const ( &str )[Extent + 1] ) noexcept
+					template<typename CharT, size_t N, size_t M>
+					struct sstr_t {
+						static constexpr ptrdiff_t const extent = N + M;
+						daw::basic_static_string<CharT, extent> m_data;
+
+						constexpr sstr_t( CharT const ( &prefix )[N + 1],
+						                  CharT const ( &str )[M + 1] ) noexcept
 						  : m_data( cstr_to_arry( prefix, str ) ) {}
 
-						constexpr daw::static_string<CharT, extent> const &
+						constexpr daw::basic_static_string<CharT, extent> const &
 						to_string( ) const noexcept {
 							return m_data;
 						}
 					};
 
-					template<typename CharT, size_t PrefixSize>
-					auto make_string( CharT const ( &prefix )[PrefixSize + 1],
+					template<typename CharT, size_t N, size_t M>
+					sstr_t( CharT const ( &prefix )[N], CharT const ( &str )[M] )
+					  ->sstr_t<CharT, N-1, M-1>;
+
+					template<typename CharT, size_t N>
+					auto make_string( CharT const ( &prefix )[N + 1],
 					                  std::string const &str ) {
 						auto fn = [str]( ) { return str; };
-						return str_t<CharT, PrefixSize, dynamic_extent, decltype( fn )>(
-						  prefix, std::move( fn ) );
+						return dstr_t<CharT, N, decltype( fn )>( prefix, std::move( fn ) );
 					};
 
-					template<typename CharT, size_t PrefixSize, size_t N>
-					constexpr str_t<CharT, PrefixSize, static_cast<ptrdiff_t>( N )>
-					make_string( CharT const ( &prefix )[PrefixSize + 1],
-					             CharT const ( &str )[N + 1] ) noexcept {
+					template<typename CharT, size_t N, size_t M>
+					constexpr sstr_t<CharT, N, M>
+					make_string( CharT const ( &prefix )[N + 1],
+					             CharT const ( &str )[M + 1] ) noexcept {
 						return {prefix, str};
 					}
 
@@ -112,7 +115,7 @@ namespace daw {
 					struct fmt_t {
 						// using values_t = std::tuple <
 
-						constexpr fmt_t( Args &&... args ) {}
+						constexpr fmt_t( Args &&... ) {}
 					};
 				} // namespace fmt_impl
 			}   // namespace
@@ -126,4 +129,3 @@ namespace daw {
 	}   // namespace static_fmt
 	using static_fmt::fmt;
 } // namespace daw
-
