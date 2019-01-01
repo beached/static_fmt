@@ -2,10 +2,10 @@ cmake_minimum_required( VERSION 2.8.12 )
 
 project( lib_nodepp_prj )
 
-find_package( Boost 1.61.0 COMPONENTS system filesystem iostreams regex unit_test_framework REQUIRED )
+#find_package( Boost 1.61.0 COMPONENTS system filesystem iostreams regex unit_test_framework REQUIRED )
 
 set( CMAKE_CXX_STANDARD 20 CACHE STRING "The C++ standard whose features are requested.")
-add_definitions( -DBOOST_TEST_DYN_LINK -DBOOST_ALL_NO_LIB -DBOOST_ALL_DYN_LINK )
+#add_definitions( -DBOOST_TEST_DYN_LINK -DBOOST_ALL_NO_LIB -DBOOST_ALL_DYN_LINK )
 
 include( "${CMAKE_SOURCE_DIR}/dependent_projects/CMakeListsCompiler.txt" )
 
@@ -43,11 +43,11 @@ set( HEADER_FILES
 set( SOURCE_FILES
 )
 
-include_directories( SYSTEM ${Boost_INCLUDE_DIRS} )
-include_directories( SYSTEM ${OPENSSL_INCLUDE_DIR} )
+#include_directories( SYSTEM ${Boost_INCLUDE_DIRS} )
 
 add_executable( static_fmt_test_bin ${HEADER_FILES} ${TEST_FOLDER}/static_fmt_test.cpp )
-target_link_libraries( static_fmt_test_bin ${Boost_LIBRARIES} ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${COMPILER_SPECIFIC_LIBS} )
+#target_link_libraries( static_fmt_test_bin ${Boost_LIBRARIES} ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${COMPILER_SPECIFIC_LIBS} )
+target_link_libraries( static_fmt_test_bin ${CMAKE_DL_LIBS} ${COMPILER_SPECIFIC_LIBS} )
 add_test( test_static_fmt static_fmt_test_bin )
 
 install( DIRECTORY ${HEADER_FOLDER}/ DESTINATION include/daw/ )
